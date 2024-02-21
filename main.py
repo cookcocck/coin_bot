@@ -1,4 +1,3 @@
-import akshare as ak
 import numpy as np
 from loguru import logger
 import time
@@ -9,7 +8,7 @@ import pandas as pd
 
 class CryptoBot:
     def __init__(self) -> None:
-        self.m_exchange = 'binance'
+        self.m_exchange = None
         self.m_symbols = []
         self.m_macd_config = {
             'fast': 12,
@@ -70,14 +69,12 @@ class CryptoBot:
             df = df.iloc[::-1]
             df.reset_index(drop=True, inplace=True)
 
-            with open('data.txt', 'w') as f:
-                # check dkx crossing up dkx_ma
-                if df.iloc[-2]['dkx'] < df.iloc[-2]['dkx_sma'] and df.iloc[-1]['dkx'] > df.iloc[-1]['dkx_sma']:           
-                    # check macd and signal
-                    macd_df = ta.macd(df['close'], self.m_macd_config['fast'], self.m_macd_config['slow'], self.m_macd_config['signal'])
-                    if macd_df.iloc[-1]['MACD_12_26_9'] > 0 and macd_df.iloc[-1]['MACD_12_26_9'] > macd_df.iloc[-1]['MACDs_12_26_9']:
-                        logger.success('{0} Cross Up !'.format(symbol))
-                        f.writelines('{0} Cross Up!'.format(symbol))
+            # check dkx crossing up dkx_ma
+            if df.iloc[-2]['dkx'] < df.iloc[-2]['dkx_sma'] and df.iloc[-1]['dkx'] > df.iloc[-1]['dkx_sma']:           
+                # check macd and signal
+                macd_df = ta.macd(df['close'], self.m_macd_config['fast'], self.m_macd_config['slow'], self.m_macd_config['signal'])
+                if (macd_df.iloc[-1]['MACD_12_26_9'] > 0 and macd_df.iloc[-1]['MACDs_12_26_9'] > 0) and (macd_df.iloc[-1]['MACD_12_26_9'] > macd_df.iloc[-1]['MACDs_12_26_9']):
+                    logger.success('{0} Cross Up !'.format(symbol))
                 
 
 
