@@ -55,7 +55,7 @@ class CryptoBot:
 
             df['dkx'] = dkx.tolist()
 
-            # calculate dkx_ma
+            # calculate dkx_sma
             dkx_sma = np.ones(df.shape[0])
             for idx in range(0, df.shape[0]):
                 sum = 0
