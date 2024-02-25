@@ -1,24 +1,39 @@
 import numpy as np
 from loguru import logger
 import time
-import random
 import pandas_ta as ta
 import ccxt
 import pandas as pd
-from multiprocessing import Process
+import argparse
 
 class CryptoBot:
     def __init__(self) -> None:
+        self.__init_arg_parser()
         self.m_symbols = []
         self.m_macd_config = {
             'fast': 12,
             'slow': 26,
             'signal': 9
         }
+        self.m_history_market_date_config = {}
+        self.m_exchange = None
+
+    def __init_arg_parser(self) -> None:
+        self.arg_parser = argparse.ArgumentParser()
+        self.arg_parser.add_argument('-e', '--exchange', nargs='?', type=str, default='binance')
+        self.arg_parser.add_argument('-p', '--period', nargs='?', type=str, default='1d')
+        self.arg_parser.add_argument('-l', '--limit', nargs='?', type=int, default=1000)
+
+    def get_symbols(self):
+        self.m_symbols = pd.DataFrame.from_dict(self.m_exchange.fetch_tickers()).transpose()['symbol'].to_list()
+        self.m_symbols = [symbol for symbol in self.m_symbols if symbol.split(':')[1] == 'USDT']
+    
+    def init_exchange(self):
+        args = self.arg_parser.parse_args()
         self.m_history_market_date_config = {
-            'exchange': 'binance',
-            'period': '1d',
-            'limit': 1000,
+            'exchange': args.exchange,
+            'period': args.period,
+            'limit': args.limit,
         }
         self.m_exchange = ccxt.binance({
             'options': {
@@ -26,16 +41,19 @@ class CryptoBot:
             }
         })
 
-    def get_symbols(self):
-        self.m_symbols = pd.DataFrame.from_dict(self.m_exchange.fetch_tickers()).transpose()['symbol'].to_list()
-        self.m_symbols = [symbol for symbol in self.m_symbols if symbol.split(':')[1] == 'USDT']
-
+    def __clear_log():
+        with open('result.log', 'r+') as f:
+            f.seek(0)  
+            f.truncate() 
+    
     def dkx_cross_strategy(self):
-        logger.info('start checking...')
-        for symbol in self.m_symbols:
+        CryptoBot.__clear_log()
+        logger.add('result.log')
+        logger.info('totoal {0}, start checking with {1}...', len(self.m_symbols), self.m_history_market_date_config)
+        for symbol_idx, symbol in enumerate(self.m_symbols):
             try:
                 time.sleep(1)
-                logger.info('checking {0}'.format(symbol))
+                logger.info('checking {0}/{1}: {2}'.format(symbol_idx + 1, len(self.m_symbols), symbol))
                 df = pd.DataFrame(self.m_exchange.fetch_ohlcv(symbol, self.m_history_market_date_config['period'], self.m_history_market_date_config['limit']), 
                                   columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
                 
@@ -88,6 +106,7 @@ class CryptoBot:
 
 if __name__ == '__main__':
     coin_bot = CryptoBot()
+    coin_bot.init_exchange()
     coin_bot.get_symbols()
     coin_bot.dkx_cross_strategy()
 
