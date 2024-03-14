@@ -1,12 +1,13 @@
-from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
-import numpy as np
-from loguru import logger
-import time
-import pandas_ta as ta
-import ccxt
-import pandas as pd
-import argparse
 import os
+import ccxt
+import time
+import warnings
+import argparse
+import numpy as np
+import pandas as pd
+import pandas_ta as ta
+from loguru import logger
+from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, wait
 
 
 class CoinBot:
@@ -196,6 +197,7 @@ class CoinBot:
 
 
 if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
     coin_bot = CoinBot()
     coin_bot.init_exchange()
     coin_bot.get_symbols()
