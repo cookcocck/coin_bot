@@ -59,7 +59,7 @@ class CoinBot:
 
     def dkx_cross_strategy(self):
         CoinBot.__clear_log()
-        logger.add("result.log")
+        logger.add("result.log", level="SUCCESS")
         logger.info(
             "start checking with config: {0}...".format(
                 self.m_history_market_date_config
@@ -91,18 +91,45 @@ class CoinBot:
             try:
                 time.sleep(0.5)
                 logger.info("checking {0}".format(symbol))
-                df = pd.DataFrame(
-                    self.m_exchange.fetch_ohlcv(
-                        symbol,
-                        self.m_history_market_date_config["period"],
-                        self.m_history_market_date_config["limit"],
-                    ),
-                    columns=["timestamp", "open", "high", "low", "close", "volume"],
-                )
+
+                if self.m_history_market_date_config["period"] == "5d":
+                    df = pd.DataFrame(
+                        self.m_exchange.fetch_ohlcv(
+                            symbol,
+                            "1d",
+                            self.m_history_market_date_config["limit"],
+                        ),
+                        columns=["timestamp", "open", "high", "low", "close", "volume"],
+                    )
+                else:
+                    df = pd.DataFrame(
+                        self.m_exchange.fetch_ohlcv(
+                            symbol,
+                            self.m_history_market_date_config["period"],
+                            self.m_history_market_date_config["limit"],
+                        ),
+                        columns=["timestamp", "open", "high", "low", "close", "volume"],
+                    )
 
                 # filter coin which history candles less 100
                 if df.shape[0] < 100:
                     continue
+
+                if self.m_history_market_date_config["period"] == "5d":
+                    blocks = -1
+                    if df.shape[0] % 5 == 0:
+                        blocks = df.shape[0] / 5
+                    else:
+                        blocks = df.shape[0] / 5 + 1
+                    split_dfs = np.array_split(df.copy(), blocks)
+                    df = pd.DataFrame(columns=["open", "close", "high", "low"])
+                    for split_df in split_dfs:
+                        df.loc[len(df)] = [
+                            split_df[:1]["open"].to_list()[0],
+                            split_df[-1:]["close"].to_list()[0],
+                            split_df["high"].max(),
+                            split_df["low"].min(),
+                        ]
 
                 df = df.iloc[::-1]
                 df.reset_index(drop=True, inplace=True)
